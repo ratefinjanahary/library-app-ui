@@ -1,21 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Book, Category } from "@/lib/types";
-import { booksService } from "@/lib/services/books.service";
+import { booksService, BookQueryParams, PaginatedResponse } from "@/lib/services/books.service";
 import { categoriesService } from "@/lib/services/categories.service";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { bookSchema, BookFormValues } from "@/lib/validators";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -30,7 +30,11 @@ import {
   Library,
   PenSquare,
   AlertTriangle,
-  X
+  X,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,7 +52,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -58,10 +61,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type ViewMode = "list" | "form";
 
-// Animation simplifiée avec les bons types
 const fadeSlide = {
   initial: { opacity: 0, y: 10 },
   animate: { 
@@ -91,7 +100,16 @@ export default function AdminBooksPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingBookId, setEditingBookId] = useState<string | null>(null);
   
-  // État pour la modale de confirmation
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const itemsPerPage = 9;
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
 
@@ -105,28 +123,77 @@ export default function AdminBooksPage() {
     },
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
+  // Fonction unifiée pour charger les données
+  const loadBooks = useCallback(async (page: number = 1) => {
     try {
-      const [booksData, categoriesData] = await Promise.all([
-        booksService.getAll(),
-        categoriesService.getAll()
-      ]);
+      setIsSearching(true);
+      setLoading(true);
       
-      setBooks(Array.isArray(booksData) ? booksData : (booksData as any).data || []);
-      setCategories(Array.isArray(categoriesData) ? categoriesData : (categoriesData as any).data || []);
+      const params: BookQueryParams = {
+        page: page,
+        limit: itemsPerPage,
+      };
+
+      if (debouncedSearchTerm.trim()) {
+        params.search = debouncedSearchTerm.trim();
+      }
+
+      if (selectedCategory !== null) {
+        params.categoryId = selectedCategory;
+      }
+
+      const response: PaginatedResponse<Book> = await booksService.getAll(params);
+      
+      setBooks(Array.isArray(response.data) ? response.data : []);
+      setTotalPages(response.totalPages || 1);
+      setTotalItems(response.total || 0);
+      setCurrentPage(page);
+      
     } catch (error) {
       console.error("Fetch error:", error);
-      toast.error("Erreur lors du chargement des données");
+      toast.error("Erreur lors du chargement des livres");
       setBooks([]);
-      setCategories([]);
+      setTotalPages(1);
+      setTotalItems(0);
     } finally {
       setLoading(false);
+      setIsSearching(false);
     }
-  }
+  }, [debouncedSearchTerm, selectedCategory, itemsPerPage]);
+
+  // Chargement des catégories
+  const fetchCategories = useCallback(async () => {
+    try {
+      const categoriesData = await categoriesService.getAll();
+      setCategories(Array.isArray(categoriesData) ? categoriesData : (categoriesData as any).data || []);
+    } catch (error) {
+      console.error("Categories fetch error:", error);
+      setCategories([]);
+    }
+  }, []);
+
+  // ✅ Chargement initial
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([loadBooks(1), fetchCategories()]);
+    };
+    init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Ne s'exécute qu'une fois
+
+  // ✅ Gestion des filtres (recherche + catégorie)
+  useEffect(() => {
+    // Reset à la page 1 et recharger
+    loadBooks(1);
+  }, [debouncedSearchTerm, selectedCategory, loadBooks]); // ✅ loadBooks est stable
+
+  // ✅ Gestion du changement de page UNIQUEMENT
+  const handlePageChange = (page: number) => {
+    if (page !== currentPage && page >= 1 && page <= totalPages) {
+      loadBooks(page);
+    }
+  };
 
   const handleOpenCreate = () => {
     setEditingBookId(null);
@@ -161,13 +228,11 @@ export default function AdminBooksPage() {
     form.reset();
   };
 
-  // Ouvrir la modale de confirmation de suppression
   const handleDeleteClick = (book: Book) => {
     setBookToDelete(book);
     setDeleteDialogOpen(true);
   };
 
-  // Supprimer effectivement le livre
   const handleConfirmDelete = async () => {
     if (!bookToDelete) return;
     
@@ -176,7 +241,8 @@ export default function AdminBooksPage() {
       toast.success(`"${bookToDelete.title}" a été supprimé`);
       setDeleteDialogOpen(false);
       setBookToDelete(null);
-      fetchData();
+      // Recharger la page courante
+      loadBooks(currentPage);
     } catch (error) {
       toast.error("Erreur lors de la suppression");
     }
@@ -194,13 +260,13 @@ export default function AdminBooksPage() {
       setViewMode("list");
       setEditingBookId(null);
       form.reset();
-      fetchData();
+      // Recharger la page 1
+      loadBooks(1);
     } catch (error) {
       toast.error("Erreur lors de l'enregistrement");
     }
   };
 
-  // Rendu du formulaire
   const renderForm = () => (
     <motion.div
       key="form"
@@ -283,7 +349,7 @@ export default function AdminBooksPage() {
                         {...field}
                         value={field.value || ""}
                         onChange={(e) => field.onChange(Number(e.target.value))}
-                        className="w-full px-3 py-2 border rounded-md bg-background"
+                        className="w-full px-3 py-4 border rounded-md bg-background"
                       >
                         <option value="">Sélectionner une catégorie</option>
                         {categories.map((category) => (
@@ -317,36 +383,80 @@ export default function AdminBooksPage() {
     </motion.div>
   );
 
-  // Rendu de la liste des livres
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-background border rounded-lg mt-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalItems)} sur {totalItems} livres
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1 || isSearching}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          {pageNumbers.map(page => (
+            <Button
+              key={page}
+              variant={currentPage === page ? "default" : "outline"}
+              size="sm"
+              onClick={() => handlePageChange(page)}
+              disabled={isSearching}
+              className="min-w-[36px]"
+            >
+              {page}
+            </Button>
+          ))}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || isSearching}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLoader = () => (
+    <motion.div
+      key="loader"
+      initial={fadeSlide.initial}
+      animate={fadeSlide.animate}
+      exit={fadeSlide.exit}
+      className="flex flex-col items-center justify-center py-12 space-y-4"
+    >
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <p className="text-muted-foreground">Chargement des livres...</p>
+    </motion.div>
+  );
+
   const renderBookList = () => {
     if (loading) {
-      return (
-        <motion.div
-          key="loading"
-          initial={fadeSlide.initial}
-          animate={fadeSlide.animate}
-          exit={fadeSlide.exit}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              </CardContent>
-              <CardFooter className="justify-end">
-                <Skeleton className="h-9 w-9" />
-              </CardFooter>
-            </Card>
-          ))}
-        </motion.div>
-      );
+      return renderLoader();
     }
 
     if (books.length === 0) {
@@ -359,11 +469,28 @@ export default function AdminBooksPage() {
         >
           <Card>
             <CardContent className="h-48 flex flex-col items-center justify-center gap-4">
-              <p className="text-muted-foreground">Aucun livre trouvé.</p>
-              <Button onClick={handleOpenCreate} variant="outline">
-                <Plus size={20} className="mr-2" />
-                Ajouter votre premier livre
-              </Button>
+              <p className="text-muted-foreground">
+                {searchTerm || selectedCategory !== null
+                  ? "Aucun livre ne correspond à vos critères de recherche." 
+                  : "Aucun livre trouvé."}
+              </p>
+              {(searchTerm || selectedCategory !== null) && (
+                <Button 
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedCategory(null);
+                  }} 
+                  variant="outline"
+                >
+                  Réinitialiser les filtres
+                </Button>
+              )}
+              {!searchTerm && selectedCategory === null && (
+                <Button onClick={handleOpenCreate} variant="outline">
+                  <Plus size={20} className="mr-2" />
+                  Ajouter votre premier livre
+                </Button>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -376,64 +503,66 @@ export default function AdminBooksPage() {
         initial={fadeSlide.initial}
         animate={fadeSlide.animate}
         exit={fadeSlide.exit}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        className="space-y-4"
       >
-        {books.map((book) => (
-          <Card key={book.id} className="flex flex-col h-full">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-              <div className="flex-1">
-                <CardTitle className="text-lg line-clamp-1">{book.title}</CardTitle>
-                <CardDescription className="flex items-center gap-1 mt-1">
-                  <User className="h-3.5 w-3.5" />
-                  {book.author}
-                </CardDescription>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleOpenEdit(book.id)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    <span>Modifier</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => handleDeleteClick(book)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    <span>Supprimer</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <BookOpen className="h-4 w-4" />
-                <span>ISBN: {book.isbn}</span>
-              </div>
-              {book.categoryId && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <Tag className="h-4 w-4" />
-                  <span>Catégorie: {
-                    categories.find(c => Number(c.id) === book.categoryId)?.name || book.categoryId
-                  }</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {books.map((book) => (
+            <Card key={book.id} className="flex flex-col h-full">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                <div className="flex-1">
+                  <CardTitle className="text-lg line-clamp-1">{book.title}</CardTitle>
+                  <CardDescription className="flex items-center gap-1 mt-1">
+                    <User className="h-3.5 w-3.5" />
+                    {book.author}
+                  </CardDescription>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleOpenEdit(book.id)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      <span>Modifier</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => handleDeleteClick(book)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Supprimer</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <BookOpen className="h-4 w-4" />
+                  <span>ISBN: {book.isbn}</span>
+                </div>
+                {book.categoryId && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <Tag className="h-4 w-4" />
+                    <span>Catégorie: {
+                      categories.find(c => Number(c.id) === book.categoryId)?.name || book.categoryId
+                    }</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {renderPagination()}
       </motion.div>
     );
   };
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec navigation */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Gestion des Livres</h1>
@@ -447,7 +576,6 @@ export default function AdminBooksPage() {
         </div>
       </div>
 
-      {/* Tabs Shadcn avec hauteur augmentée */}
       <Tabs value={viewMode} onValueChange={(value) => {
         if (value === "list") { 
           handleBackToList(); 
@@ -463,7 +591,7 @@ export default function AdminBooksPage() {
             <Library className="h-5 w-5" />
             Liste des livres
             <span className="ml-1 text-xs text-muted-foreground">
-              ({books.length})
+              ({totalItems})
             </span>
           </TabsTrigger>
           <TabsTrigger 
@@ -485,12 +613,48 @@ export default function AdminBooksPage() {
         </TabsList>
       </Tabs>
 
-      {/* Contenu avec animation */}
+      {viewMode === "list" && (
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par titre, auteur ou ISBN..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+              disabled={loading || isSearching}
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          
+          <Select
+            value={selectedCategory !== null ? String(selectedCategory) : "all"}
+            onValueChange={(value) => {
+              setSelectedCategory(value === null ? null : parseInt(value, 10));
+            }}
+            disabled={loading || isSearching}
+          >
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Toutes les catégories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les catégories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={String(category.id)}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <AnimatePresence mode="wait">
         {viewMode === "list" ? renderBookList() : renderForm()}
       </AnimatePresence>
 
-      {/* Modale de confirmation de suppression */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -504,7 +668,7 @@ export default function AdminBooksPage() {
           </DialogHeader>
           
           {bookToDelete && (
-            <div className="bg-gray-400/7 p-4 rounded-lg space-y-2">
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
               <p className="text-sm font-medium">{bookToDelete.title}</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">

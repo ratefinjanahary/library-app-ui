@@ -120,13 +120,13 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                <Button size="xl" type="submit" className="w-full mt-2" disabled={form.formState.isSubmitting}>
                   {form.formState.isSubmitting ? "Création..." : "S'inscrire"}
                 </Button>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4 text-center">
+          <CardFooter className="flex flex-col gap-4 text-center mb-2">
             <div className="text-sm text-muted-foreground">
               Déjà un compte ?{" "}
               <Link href="/login" className="text-primary hover:underline">
