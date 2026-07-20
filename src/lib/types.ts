@@ -37,18 +37,37 @@ export interface Inventory {
 }
 
 export interface Borrowing {
-  id: string;
-  userId: string;
-  inventoryId: string;
+  id: number;
+  userId: number;
+  inventoryItemId: number;
   borrowDate: string;
   dueDate: string;
   returnDate: string | null;
   status: 'BORROWED' | 'RETURNED' | 'OVERDUE';
-  inventory?: Inventory;
-  user?: User;
-  createdAt: string;
-  updatedAt: string;
+  inventory?: {
+    id: number;
+    status: string;
+    book?: {
+      id: number;
+      title: string;
+      author: string;
+      isbn: string;
+      publisher: string;
+      publicationYear: number;
+      category: string;
+      description: string;
+    };
+  };
+  fines?: Fine[];
 }
+
+export interface Fine {
+  id: number;
+  borrowingId: number;
+  amount: number;
+  paidAt: string | null;
+}
+
 
 export interface AnalyticsKPIs {
   totalBooks: number;

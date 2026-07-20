@@ -41,21 +41,26 @@ export default function MemberDashboard() {
     }
   }
 
-  async function handleReturn(borrowingId: string) {
-    try {
-      await borrowingsService.returnBook(borrowingId);
-      toast.success("Livre retourné avec succès !");
-      fetchBorrowings();
-    } catch (error) {
+  async function handleReturn(borrowingId: number) {
+  try {
+    await borrowingsService.returnBook(borrowingId);
+    toast.success("Livre retourné avec succès !");
+    await fetchBorrowings(); // Rafraîchir la liste après le retour
+  } catch (error: any) {
+    console.error('Erreur lors du retour:', error);
+    if (error.response?.data?.message) {
+      toast.error(error.response.data.message);
+    } else {
       toast.error("Erreur lors du retour du livre.");
     }
   }
+}
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "BORROWED": return "text-blue-500 bg-blue-500/10";
-      case "RETURNED": return "text-green-500 bg-green-500/10";
-      case "OVERDUE": return "text-destructive bg-destructive/10";
+      case "BORROWED": return "text-primary bg-primary/7 py-1.5";
+      case "RETURNED": return "text-green-500 bg-green-500/7 py-1.5";
+      case "OVERDUE": return "text-destructive bg-destructive/7 py-1.5";
       default: return "text-muted-foreground bg-muted";
     }
   };
@@ -109,13 +114,13 @@ export default function MemberDashboard() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {borrowings.map((borrowing) => (
               <Card key={borrowing.id} className="flex flex-col">
-                <CardHeader className="pb-3">
+                <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${getStatusColor(borrowing.status)}`}>
                       {getStatusLabel(borrowing.status)}
                     </span>
                   </div>
-                  <CardTitle className="text-lg line-clamp-1">
+                  <CardTitle>
                     {borrowing.inventory?.book?.title || "Livre inconnu"}
                   </CardTitle>
                   <CardDescription>

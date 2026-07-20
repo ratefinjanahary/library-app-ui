@@ -408,7 +408,7 @@ export default function AdminBooksPage() {
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1 || isSearching}
           >
@@ -419,20 +419,17 @@ export default function AdminBooksPage() {
             <Button
               key={page}
               variant={currentPage === page ? "default" : "outline"}
-              size="sm"
+              size="lg" className="min-w-[36px]"
               onClick={() => handlePageChange(page)}
               disabled={isSearching}
-              className="min-w-[36px]"
             >
               {page}
             </Button>
           ))}
           
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || isSearching}
+            variant="outline" size="lg"
+            onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || isSearching}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
