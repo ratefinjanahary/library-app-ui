@@ -7,11 +7,12 @@ import { useAuthStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { BookMarked, Calendar, CheckCircle, Clock } from "lucide-react";
+import { BookMarked, Calendar, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { motion } from "framer-motion";
 
 export default function MemberDashboard() {
   const router = useRouter();
@@ -30,9 +31,12 @@ export default function MemberDashboard() {
 
   async function fetchBorrowings() {
     try {
-      // Note: On adapte borrowingsService.getHistory ou getAll selon ce qui est exposé, mais ici le endpoint était "/borrowings/my".
-      // borrowingsService.getHistory correspond à l'historique de l'utilisateur ou on peut faire un appel typé direct
+      setLoading(true);
       const data = await borrowingsService.getHistory();
+      
+      // Simuler un délai de 1000ms pour le spinner
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       setBorrowings(data);
     } catch (error) {
       toast.error("Erreur lors de la récupération de vos emprunts.");
@@ -41,27 +45,22 @@ export default function MemberDashboard() {
     }
   }
 
-  async function handleReturn(borrowingId: number) {
-  try {
-    await borrowingsService.returnBook(borrowingId);
-    toast.success("Livre retourné avec succès !");
-    await fetchBorrowings(); // Rafraîchir la liste après le retour
-  } catch (error: any) {
-    console.error('Erreur lors du retour:', error);
-    if (error.response?.data?.message) {
-      toast.error(error.response.data.message);
-    } else {
+  async function handleReturn(borrowingId: string) {
+    try {
+      await borrowingsService.returnBook(borrowingId);
+      toast.success("Livre retourné avec succès !");
+      fetchBorrowings();
+    } catch (error) {
       toast.error("Erreur lors du retour du livre.");
     }
   }
-}
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "BORROWED": return "text-primary bg-primary/7 py-1.5";
-      case "RETURNED": return "text-green-500 bg-green-500/7 py-1.5";
-      case "OVERDUE": return "text-destructive bg-destructive/7 py-1.5";
-      default: return "text-muted-foreground bg-muted";
+      case "BORROWED": return "bg-blue-500/7 text-blue-500 hover:bg-blue-500/20";
+      case "RETURNED": return "bg-green-500/7 text-green-500 hover:bg-green-500/20";
+      case "OVERDUE": return "bg-destructive/7 text-destructive hover:bg-destructive/20";
+      default: return "bg-muted text-muted-foreground hover:bg-muted/80";
     }
   };
 
@@ -97,62 +96,63 @@ export default function MemberDashboard() {
         </h2>
 
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {[1, 2].map(i => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-4 w-1/3" />
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Chargement de vos emprunts...</p>
           </div>
         ) : borrowings.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {borrowings.map((borrowing) => (
-              <Card key={borrowing.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${getStatusColor(borrowing.status)}`}>
-                      {getStatusLabel(borrowing.status)}
-                    </span>
-                  </div>
-                  <CardTitle>
-                    {borrowing.inventory?.book?.title || "Livre inconnu"}
-                  </CardTitle>
-                  <CardDescription>
-                    {borrowing.inventory?.book?.author || "Auteur inconnu"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grow space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>Emprunté le : {formatSafeDate(borrowing.borrowDate, "dd MMM yyyy")}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="w-4 h-4" />
-                    <span className={(borrowing.dueDate && new Date(borrowing.dueDate) < new Date() && borrowing.status !== 'RETURNED') ? 'text-destructive font-medium' : ''}>
-                      À rendre le : {formatSafeDate(borrowing.dueDate, "dd MMM yyyy")}
-                    </span>
-                  </div>
-                  {borrowing.returnDate && (
-                    <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Retourné le : {formatSafeDate(borrowing.returnDate, "dd MMM yyyy")}</span>
+            {borrowings.map((borrowing, index) => (
+              <motion.div
+                key={borrowing.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.3,
+                  delay: index * 0.05 // Délai progressif
+                }}
+              >
+                <Card className="flex flex-col h-full">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge className={`text-xs font-medium px-2.5 py-1 rounded-full ${getStatusColor(borrowing.status)}`}>
+                        {getStatusLabel(borrowing.status)}
+                      </Badge>
                     </div>
-                  )}
-                </CardContent>
-                <CardFooter className="pt-3">
-                  {borrowing.status !== "RETURNED" && (
-                    <Button className="h-10 bg-primary/5 text-primary hover:text-white px-5" onClick={() => handleReturn(borrowing.id)}>
-                      Retourner le livre
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
+                    <CardTitle className="line-clamp-1">
+                      {borrowing.inventory?.book?.title || "Livre inconnu"}
+                    </CardTitle>
+                    <CardDescription>
+                      {borrowing.inventory?.book?.author || "Auteur inconnu"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grow space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      <span>Emprunté le : {formatSafeDate(borrowing.borrowDate, "dd MMM yyyy")}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      <span className={(borrowing.dueDate && new Date(borrowing.dueDate) < new Date() && borrowing.status !== 'RETURNED') ? 'text-destructive font-medium' : ''}>
+                        À rendre le : {formatSafeDate(borrowing.dueDate, "dd MMM yyyy")}
+                      </span>
+                    </div>
+                    {borrowing.returnDate && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Retourné le : {formatSafeDate(borrowing.returnDate, "dd MMM yyyy")}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="pt-2 flex justify-end">
+                    {borrowing.status !== "RETURNED" && (
+                      <Button variant="primarySoft" size="lg" onClick={() => handleReturn(borrowing.id)}>
+                        Retourner le livre
+                      </Button>
+                    )}
+                  </CardFooter>
+                </Card>
+              </motion.div>
             ))}
           </div>
         ) : (

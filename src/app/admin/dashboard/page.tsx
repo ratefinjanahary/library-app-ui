@@ -42,7 +42,7 @@ export default function AdminDashboard() {
       title: "Livres au Catalogue",
       value: kpis?.totalBooks || 0,
       icon: BookOpen,
-      color: "text-secondary",
+      color: "text-blue-600",
     },
     {
       title: "Emprunts Actifs",

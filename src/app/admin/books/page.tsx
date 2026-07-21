@@ -40,7 +40,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -525,7 +524,6 @@ export default function AdminBooksPage() {
                       <Edit className="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={() => handleDeleteClick(book)}
                       className="text-destructive"

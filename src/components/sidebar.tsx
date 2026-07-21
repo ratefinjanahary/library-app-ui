@@ -37,11 +37,6 @@ export function Sidebar() {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    setShowLogoutDialog(false);
-  };
-
   if (!mounted || !isAuthenticated) {
     return null;
   }
@@ -49,7 +44,8 @@ export function Sidebar() {
   const mainLinks = [
     { name: "Catalogue", href: "/books", icon: Compass },
     ...(isAuthenticated
-      ? [{ name: "Mes Emprunts", href: "/dashboard", icon: Bookmark }]
+      ? [{ name: "Mes Emprunts", href: "/dashboard", icon: Bookmark },
+         { name: "Emprunter un livre", href: "/borrow", icon: Book }]
       : []),
   ];
 
@@ -58,6 +54,11 @@ export function Sidebar() {
     { name: "Livres", href: "/admin/books", icon: Book },
     { name: "Catégories", href: "/admin/categories", icon: Tags },
   ];
+
+  const handleLogout = () => {
+    logout();
+    setShowLogoutDialog(false);
+  };
 
   return (
     <>
@@ -147,7 +148,7 @@ export function Sidebar() {
                 variant="destructive"
                 size="lg"
                 onClick={() => setShowLogoutDialog(true)}
-                className="w-full h-10 flex items-center justify-center gap-2 bg-destructive/7"
+                className="w-full h-10 flex items-center justify-center gap-2 bg-destructive/7 hover:bg-destructive/20"
               >
                 <LogOut className="h-4 w-4" />
                 Déconnexion
@@ -164,18 +165,20 @@ export function Sidebar() {
                   variant="outline"
                   size="sm"
                   className="w-full justify-start gap-2"
-                  render={<Link href="/login" />}
                 >
-                  <LogIn className="h-4 w-4" />
-                  Connexion
+                  <Link href="/login">
+                    <LogIn className="h-4 w-4" />
+                    Connexion
+                  </Link>
                 </Button>
                 <Button
                   size="sm"
                   className="w-full justify-start gap-2"
-                  render={<Link href="/register" />}
                 >
-                  <UserPlus className="h-4 w-4" />
-                  S'inscrire
+                  <Link href="/register">
+                    <UserPlus className="h-4 w-4" />
+                    S'inscrire
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -183,7 +186,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Dialogue de confirmation de déconnexion */}
+      {/* Modal de confirmation de déconnexion */}
       <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -192,13 +195,23 @@ export function Sidebar() {
               Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à nouveau à votre compte.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button size="lg" variant="outline" onClick={() => setShowLogoutDialog(false)}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setShowLogoutDialog(false)}
+              className="w-full sm:w-auto"
+            >
               Annuler
             </Button>
-            <Button size="lg" variant="destructive" onClick={handleLogout} className="ml-2 px-4">
+            <Button
+              size="lg"
+              variant="destructive"
+              onClick={handleLogout}
+              className="w-full sm:w-auto"
+            >
               <LogOut className="h-4 w-4 mr-2" />
-              Se déconnecter
+              Déconnexion
             </Button>
           </DialogFooter>
         </DialogContent>

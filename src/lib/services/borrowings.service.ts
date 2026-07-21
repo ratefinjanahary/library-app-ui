@@ -12,19 +12,14 @@ export const borrowingsService = {
     return response.data
   },
 
-  borrow: async (bookId: number): Promise<Borrowing> => {
-    const response = await api.post<Borrowing>('/borrowings/borrow', { bookId })
+  // Modifier pour accepter un tableau de bookIds
+  borrow: async (bookIds: number[]): Promise<Borrowing[]> => {
+    const response = await api.post<Borrowing[]>('/borrowings/borrow', { bookIds })
     return response.data
   },
 
-  returnBook: async (id: number): Promise<Borrowing> => {
+  returnBook: async (id: string): Promise<Borrowing> => {
     const response = await api.post<Borrowing>(`/borrowings/return/${id}`)
-    return response.data
-  },
-
-  // Nouvelle méthode pour récupérer un emprunt spécifique
-  getById: async (id: number): Promise<Borrowing> => {
-    const response = await api.get<Borrowing>(`/borrowings/${id}`)
     return response.data
   }
 }
