@@ -171,23 +171,21 @@ export default function AdminBooksPage() {
     }
   }, []);
 
-  // ✅ Chargement initial
   useEffect(() => {
     const init = async () => {
       setLoading(true);
       await Promise.all([loadBooks(1), fetchCategories()]);
     };
     init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Ne s'exécute qu'une fois
+  }, []);
 
-  // ✅ Gestion des filtres (recherche + catégorie)
+  // Gestion des filtres (recherche + catégorie)
   useEffect(() => {
     // Reset à la page 1 et recharger
     loadBooks(1);
   }, [debouncedSearchTerm, selectedCategory, loadBooks]); // ✅ loadBooks est stable
 
-  // ✅ Gestion du changement de page UNIQUEMENT
+  // Gestion du changement de page UNIQUEMENT
   const handlePageChange = (page: number) => {
     if (page !== currentPage && page >= 1 && page <= totalPages) {
       loadBooks(page);
@@ -207,7 +205,7 @@ export default function AdminBooksPage() {
 
   const handleOpenEdit = async (id: string) => {
     try {
-      const bookData = await booksService.getById(id);
+      const bookData = await booksService.getById(Number(id));
       setEditingBookId(id);
       form.reset({
         title: bookData.title,
@@ -240,7 +238,6 @@ export default function AdminBooksPage() {
       toast.success(`"${bookToDelete.title}" a été supprimé`);
       setDeleteDialogOpen(false);
       setBookToDelete(null);
-      // Recharger la page courante
       loadBooks(currentPage);
     } catch (error) {
       toast.error("Erreur lors de la suppression");
@@ -250,7 +247,7 @@ export default function AdminBooksPage() {
   const onSubmit = async (data: BookFormValues) => {
     try {
       if (editingBookId) {
-        await booksService.update(editingBookId, data);
+        await booksService.update(Number(editingBookId), data);
         toast.success("Livre mis à jour");
       } else {
         await booksService.create(data);
@@ -259,7 +256,6 @@ export default function AdminBooksPage() {
       setViewMode("list");
       setEditingBookId(null);
       form.reset();
-      // Recharger la page 1
       loadBooks(1);
     } catch (error) {
       toast.error("Erreur lors de l'enregistrement");
@@ -279,13 +275,11 @@ export default function AdminBooksPage() {
           <CardTitle className="flex items-center gap-2">
             {editingBookId ? (
               <>
-                <PenSquare className="h-5 w-5" />
-                Modifier le livre
+                <PenSquare /> Modifier le livre
               </>
             ) : (
               <>
-                <Plus className="h-5 w-5" />
-                Ajouter un nouveau livre
+                <Plus /> Ajouter un nouveau livre
               </>
             )}
           </CardTitle>
@@ -438,16 +432,10 @@ export default function AdminBooksPage() {
   };
 
   const renderLoader = () => (
-    <motion.div
-      key="loader"
-      initial={fadeSlide.initial}
-      animate={fadeSlide.animate}
-      exit={fadeSlide.exit}
-      className="flex flex-col items-center justify-center py-12 space-y-4"
-    >
-      <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      <p className="text-muted-foreground">Chargement des livres...</p>
-    </motion.div>
+    <div className="flex flex-col items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="mt-4 text-muted-foreground">Chargement des livres...</p>
+    </div>
   );
 
   const renderBookList = () => {
@@ -520,7 +508,7 @@ export default function AdminBooksPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleOpenEdit(book.id)}>
+                    <DropdownMenuItem onClick={() => handleOpenEdit(String(book.id))}>
                       <Edit className="mr-2 h-4 w-4" />
                       <span>Modifier</span>
                     </DropdownMenuItem>

@@ -9,24 +9,41 @@ export interface User {
 }
 
 export interface Category {
-  id: string;
+  id: number; // Changé de string à number pour correspondre au backend
   name: string;
   createdAt: string;
   updatedAt: string;
+  _count?: {
+    books: number;
+  };
 }
 
 export interface Book {
-  id: string;
+  id: number; // Changé de string à number
   title: string;
   author: string;
   isbn: string;
+  summary?: string;
   categoryId: number;
   category?: Category;
-  inventory?: Inventory[];
+  inventoryItems?: InventoryItem[]; // Changé de inventory à inventoryItems
   createdAt: string;
   updatedAt: string;
 }
 
+// Nouvelle interface correspondant à InventoryItem du backend
+export interface InventoryItem {
+  id: number;
+  bookId: number;
+  barcode: string;
+  status: 'AVAILABLE' | 'BORROWED' | 'MAINTENANCE';
+  condition?: string;
+  book?: Book;
+  borrowings?: Borrowing[];
+}
+
+// Garder l'ancienne interface pour compatibilité mais marquer comme dépréciée
+/** @deprecated Use InventoryItem instead */
 export interface Inventory {
   id: string;
   bookId: string;
@@ -37,14 +54,15 @@ export interface Inventory {
 }
 
 export interface Borrowing {
+  inventory: any;
   id: number;
   userId: number;
   inventoryItemId: number;
-  borrowDate: string;
+  borrowedAt: string; // Changé de borrowDate
   dueDate: string;
-  returnDate: string | null;
-  status: 'BORROWED' | 'RETURNED' | 'OVERDUE';
-  inventory?: {
+  returnedAt: string | null; // Changé de returnDate
+  status: 'BORROWED' | 'RETURNED' | 'OVERDUE' | 'ACTIVE';
+  inventoryItem?: { // Changé de inventory à inventoryItem
     id: number;
     status: string;
     book?: {
@@ -52,10 +70,11 @@ export interface Borrowing {
       title: string;
       author: string;
       isbn: string;
-      publisher: string;
-      publicationYear: number;
-      category: string;
-      description: string;
+      publisher?: string;
+      publicationYear?: number;
+      category?: string;
+      description?: string;
+      summary?: string;
     };
   };
   fines?: Fine[];
@@ -65,9 +84,9 @@ export interface Fine {
   id: number;
   borrowingId: number;
   amount: number;
-  paidAt: string | null;
+  status: 'UNPAID' | 'PAID';
+  createdAt: string;
 }
-
 
 export interface AnalyticsKPIs {
   totalBooks: number;
@@ -81,4 +100,13 @@ export interface TopBook {
   title: string;
   author: string;
   borrowCount: number;
+}
+
+// Ajouter l'interface pour la réponse paginée
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

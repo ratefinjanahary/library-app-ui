@@ -1,29 +1,11 @@
 import { api } from '../api'
-import { Book } from '../types'
+import { Book, PaginatedResponse } from '../types'
 
-// Interface pour les paramètres de requête
 export interface BookQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  categoryId?: number; // Changé de string à number pour correspondre au type Book
-}
-
-// Interface pour la réponse paginée
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  categoryId?: number;
 }
 
 // Interface pour la réponse du backend
@@ -41,7 +23,6 @@ export const booksService = {
   getAll: async (params?: BookQueryParams): Promise<PaginatedResponse<Book>> => {
     const response = await api.get<BackendPaginatedResponse<Book>>('/books', { params });
     
-    // Transformer la réponse du backend en format attendu par le frontend
     return {
       data: response.data.data,
       total: response.data.meta.total,
@@ -51,7 +32,7 @@ export const booksService = {
     };
   },
 
-  getById: async (id: string): Promise<Book> => {
+  getById: async (id: number): Promise<Book> => { // Changé string à number
     const response = await api.get<Book>(`/books/${id}`)
     return response.data
   },
@@ -61,12 +42,27 @@ export const booksService = {
     return response.data
   },
 
-  update: async (id: string, data: Partial<Book>): Promise<Book> => {
+  update: async (id: number, data: Partial<Book>): Promise<Book> => { // Changé string à number
     const response = await api.patch<Book>(`/books/${id}`, data)
     return response.data
   },
 
-  delete: async (id: string): Promise<void> => {
+  delete: async (id: number): Promise<void> => { // Changé string à number
     await api.delete(`/books/${id}`)
+  },
+
+  // Nouvelle méthode pour obtenir les livres disponibles
+  getAvailable: async (params?: BookQueryParams): Promise<PaginatedResponse<Book>> => {
+    const response = await api.get<BackendPaginatedResponse<Book>>('/books/available', { params });
+    
+    return {
+      data: response.data.data,
+      total: response.data.meta.total,
+      page: response.data.meta.page,
+      limit: response.data.meta.limit,
+      totalPages: response.data.meta.totalPages,
+    };
   }
 }
+
+export type { PaginatedResponse };

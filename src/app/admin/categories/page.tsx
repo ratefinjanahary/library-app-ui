@@ -224,12 +224,12 @@ export default function AdminCategoriesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleOpenEdit(category.id)}>
+                      <DropdownMenuItem onClick={() => handleOpenEdit(String(category.id))}>
                         <Edit className="mr-2 h-4 w-4" />
                         <span>Modifier</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => handleDelete(String(category.id))}
                         className="text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />

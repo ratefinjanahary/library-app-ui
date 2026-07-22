@@ -20,14 +20,12 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const addItem = useCartStore(state => state.addItem);
-  const cartItems = useCartStore(state => state.items);
 
   useEffect(() => {
     async function fetchBookData() {
       try {
         const [bookData, invRes] = await Promise.all([
-          booksService.getById(unwrappedParams.id),
+          booksService.getById(Number(unwrappedParams.id)),
           api.get(`/inventory?bookId=${unwrappedParams.id}`)
         ]);
         setBook(bookData);
