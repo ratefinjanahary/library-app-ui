@@ -8,7 +8,6 @@ export interface BookQueryParams {
   categoryId?: number;
 }
 
-// Interface pour la réponse du backend
 interface BackendPaginatedResponse<T> {
   data: T[];
   meta: {

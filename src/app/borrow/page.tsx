@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Search, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, BookOpen, Loader2 } from 'lucide-react';
 
 export default function BorrowPage() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -98,10 +98,10 @@ export default function BorrowPage() {
   if (loading && books.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement des livres...</p>
-        </div>
+        <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Chargement des livres...</p>
+          </div>
       </div>
     );
   }
@@ -222,7 +222,7 @@ export default function BorrowPage() {
             )}
 
             {/* Actions */}
-            <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-gray-50 rounded-lg">
+            <Card className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 p-4 rounded-lg">
               <span className="text-sm text-gray-600">
                 <span className="font-semibold">{selectedBookIds.length}</span> / 5 livres sélectionnés
               </span>
@@ -241,7 +241,7 @@ export default function BorrowPage() {
                   `Emprunter ${selectedBookIds.length} livre${selectedBookIds.length > 1 ? 's' : ''}`
                 )}
               </Button>
-            </div>
+            </Card>
           </>
         )}
       </div>

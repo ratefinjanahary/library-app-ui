@@ -13,6 +13,7 @@ import {
   LogOut,
   LogIn,
   UserPlus,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
@@ -53,6 +54,7 @@ export function Sidebar() {
     { name: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Livres", href: "/admin/books", icon: Book },
     { name: "Catégories", href: "/admin/categories", icon: Tags },
+    { name: "Utilisateurs", href: "/admin/users", icon: Users },
   ];
 
   const handleLogout = () => {

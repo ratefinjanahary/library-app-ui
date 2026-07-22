@@ -51,6 +51,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -111,6 +112,7 @@ export default function AdminBooksPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
+  const [formStep, setFormStep] = useState(1);
 
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookSchema),
@@ -200,6 +202,7 @@ export default function AdminBooksPage() {
       isbn: "", 
       categoryId: categories[0]?.id ? Number(categories[0].id) : 0 
     });
+    setFormStep(1);
     setViewMode("form");
   };
 
@@ -213,6 +216,7 @@ export default function AdminBooksPage() {
         isbn: bookData.isbn,
         categoryId: Number(bookData.categoryId),
       });
+      setFormStep(1);
       setViewMode("form");
     } catch (error) {
       toast.error("Erreur lors du chargement du livre");
@@ -262,6 +266,22 @@ export default function AdminBooksPage() {
     }
   };
 
+  const nextStep = async () => {
+    let isValid = false;
+    if (formStep === 1) {
+      isValid = await form.trigger(["title", "author"]);
+    } else if (formStep === 2) {
+      isValid = await form.trigger(["isbn", "categoryId"]);
+    }
+    if (isValid) {
+      setFormStep((prev) => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    setFormStep((prev) => prev - 1);
+  };
+
   const renderForm = () => (
     <motion.div
       key="form"
@@ -288,81 +308,160 @@ export default function AdminBooksPage() {
               ? "Modifiez les informations du livre et cliquez sur mettre à jour." 
               : "Remplissez tous les champs pour ajouter un livre au catalogue."}
           </CardDescription>
+          <div className="pt-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span>Étape {formStep} sur 3</span>
+              <span className="text-muted-foreground">
+                {formStep === 1 ? "Informations de base" : formStep === 2 ? "Détails du livre" : "Récapitulatif"}
+              </span>
+            </div>
+            <Progress value={(formStep / 3) * 100} className="h-2" />
+          </div>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Titre *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Titre du livre" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              {formStep === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Titre *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Titre du livre" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="author"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Auteur *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nom de l'auteur" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+              )}
+
+              {formStep === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="isbn"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ISBN *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ISBN" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Catégorie</FormLabel>
+                        <FormControl>
+                          <select 
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            className="w-full px-3 py-4 border rounded-md bg-background"
+                          >
+                            <option value="">Sélectionner une catégorie</option>
+                            {categories.map((category) => (
+                              <option key={category.id} value={Number(category.id)}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+              )}
+
+              {formStep === 3 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4"
+                >
+                  <div className="bg-muted p-4 rounded-lg space-y-3 border">
+                    <h3 className="font-semibold text-lg border-b pb-2">Récapitulatif des informations</h3>
+                    <div className="grid grid-cols-3 gap-y-2 text-sm">
+                      <span className="text-muted-foreground">Titre :</span>
+                      <span className="col-span-2 font-medium">{form.getValues().title}</span>
+                      
+                      <span className="text-muted-foreground">Auteur :</span>
+                      <span className="col-span-2 font-medium">{form.getValues().author}</span>
+                      
+                      <span className="text-muted-foreground">ISBN :</span>
+                      <span className="col-span-2 font-medium">{form.getValues().isbn}</span>
+                      
+                      <span className="text-muted-foreground">Catégorie :</span>
+                      <span className="col-span-2 font-medium">
+                        {categories.find(c => Number(c.id) === form.getValues().categoryId)?.name || "Non spécifiée"}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              <div className="flex gap-3 pt-6">
+                {formStep > 1 && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={prevStep}
+                    className="flex-1"
+                  >
+                    Précédent
+                  </Button>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="author"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Auteur *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nom de l'auteur" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                
+                {formStep < 3 ? (
+                  <Button 
+                    type="button" 
+                    onClick={nextStep}
+                    className="flex-1"
+                  >
+                    Suivant
+                  </Button>
+                ) : (
+                  <Button type="submit" className="flex-1">
+                    {editingBookId ? "Mettre à jour" : "Confirmer et Créer"}
+                  </Button>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="isbn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ISBN *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ISBN" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Catégorie</FormLabel>
-                    <FormControl>
-                      <select 
-                        {...field}
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                        className="w-full px-3 py-4 border rounded-md bg-background"
-                      >
-                        <option value="">Sélectionner une catégorie</option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={Number(category.id)}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1">
-                  {editingBookId ? "Mettre à jour" : "Créer le livre"}
-                </Button>
+                
                 <Button 
                   type="button" 
-                  variant="outline" 
+                  variant="ghost" 
                   onClick={handleBackToList}
                   className="flex-1"
                 >

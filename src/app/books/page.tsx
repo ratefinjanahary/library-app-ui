@@ -17,7 +17,6 @@ export default function BooksPage() {
     async function fetchBooks() {
       try {
         const data = await booksService.getAll();
-        // Le service gère déjà l'extraction des données ou renvoie le tableau directement
         setBooks(Array.isArray(data) ? data : (data as any).data || []);
       } catch (error) {
         console.error("Failed to fetch books", error);
