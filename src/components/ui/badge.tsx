@@ -23,6 +23,10 @@ const badgeVariants = cva(
           "text-primary underline-offset-4 hover:underline",
         success:
           "bg-green-100/50 text-green-600 [a]:hover:bg-green-100/70 dark:bg-green-900/30 dark:text-green-400 dark:[a]:hover:bg-green-900/50",
+        admin:
+          "bg-blue-100/50 text-blue-700 [a]:hover:bg-blue-100/70 dark:bg-blue-900/30 dark:text-blue-400 dark:[a]:hover:bg-blue-900/50",
+        user:
+          "bg-purple-100/50 text-purple-700 [a]:hover:bg-purple-100/70 dark:bg-purple-900/30 dark:text-purple-400 dark:[a]:hover:bg-purple-900/50",
       },
     },
     defaultVariants: {

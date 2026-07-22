@@ -102,7 +102,6 @@ export interface TopBook {
   borrowCount: number;
 }
 
-// Ajouter l'interface pour la réponse paginée
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

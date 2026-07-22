@@ -108,7 +108,7 @@ export default function MemberDashboard() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Mon Tableau de Bord</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Mon Tableau de Bord</h1>
         <p className="text-gray-600 mt-1">
           Bienvenue, {user?.firstName || "Membre"}. Voici vos emprunts récents.
         </p>

@@ -180,10 +180,12 @@ export default function AdminCategoriesPage() {
                 )}
               />
               <DialogFooter>
-                <Button size="xl" variant="outline" type="button" onClick={() => setShowAddForm(false)} className="px-5">
+                <Button size="lg" variant="outline" type="button" onClick={() => setShowAddForm(false)} className="px-5">
                   Annuler
                 </Button>
-                <Button size="xl" type="submit" className="px-7">Ajouter</Button>
+                <Button size="lg" type="submit" className="px-7">
+                  Ajouter
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -245,7 +247,7 @@ export default function AdminCategoriesPage() {
                   <span>ID: {category.id}</span>
                 </div>
               </CardContent>
-              <CardFooter className="border-t pt-4">
+              <CardFooter>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground w-full justify-between">
                   <span>Nombre de livres</span>
                   <Badge variant="secondary">

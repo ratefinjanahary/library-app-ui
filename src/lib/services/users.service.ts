@@ -11,9 +11,22 @@ export interface User {
   updatedAt: string;
 }
 
+export interface PaginatedUsersResponse {
+  data: User[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const usersService = {
-  getUsers: async (): Promise<User[]> => {
-    const response = await api.get('/users');
+  getUsers: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+  }): Promise<PaginatedUsersResponse> => {
+    const response = await api.get('/users', { params });
     return response.data;
   },
 
