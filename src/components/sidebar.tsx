@@ -101,9 +101,9 @@ export function Sidebar() {
     <Link
       href={link.href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all",
         isActive
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/7 text-primary"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
         isCollapsed && "justify-center px-2",
         isChild && !isCollapsed && "ml-4"
@@ -267,7 +267,6 @@ export function Sidebar() {
               <div className={cn("flex items-center", isCollapsed ? "flex-col gap-2" : "justify-between")}>
                 {!isCollapsed ? (
                   <>
-                    {/* Remplacer "Connecté en tant que" par une icône utilisateur */}
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                         {user?.firstName?.[0]}{user?.lastName?.[0]}
@@ -350,13 +349,9 @@ export function Sidebar() {
                 )}
               </div>
               <Button
-                variant="destructive"
-                size={isCollapsed ? "icon" : "lg"}
+                variant="destructiveSoft"
+                size={isCollapsed ? "icon" : "default"}
                 onClick={() => setShowLogoutDialog(true)}
-                className={cn(
-                  "bg-destructive/7 hover:bg-destructive/15 text-destructive hover:text-destructive",
-                  isCollapsed ? "h-10 w-10" : "w-full h-10"
-                )}
                 title={isCollapsed ? "Déconnexion" : undefined}
               >
                 <LogOut className="h-4 w-4" />
@@ -429,11 +424,11 @@ export function Sidebar() {
             </Button>
             <Button
               size="lg"
-              variant="destructive"
+              variant="destructiveSoft"
               onClick={handleLogout}
               className="w-full sm:w-auto"
             >
-              <LogOut className="h-4 w-4 mr-2" />
+              <LogOut />
               Déconnexion
             </Button>
           </DialogFooter>

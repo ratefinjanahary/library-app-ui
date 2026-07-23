@@ -114,6 +114,9 @@ export default function AdminBooksPage() {
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
   const [formStep, setFormStep] = useState(1);
 
+  // 1. Etat pour l'input de page
+const [pageInput, setPageInput] = useState<string>("");
+
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookSchema),
     defaultValues: {
@@ -492,43 +495,102 @@ export default function AdminBooksPage() {
       pageNumbers.push(i);
     }
 
+    // Gestion du changement de page via l'input
+    const handlePageInputSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      const pageNum = parseInt(pageInput);
+      if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+        handlePageChange(pageNum);
+        setPageInput("");
+      }
+    };
+
     return (
-      <div className="flex items-center justify-between px-4 py-3 bg-background border rounded-lg mt-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-background border rounded-lg mt-4 gap-4">
+        <div className="text-sm text-muted-foreground text-center sm:text-left">
           Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, totalItems)} sur {totalItems} livres
         </div>
-        <div className="flex items-center space-x-2">
+        
+        <div className="flex items-center gap-2 flex-wrap justify-center">
           <Button
             variant="outline"
-            size="lg"
+            size="sm"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1 || isSearching}
+            className="h-8 w-8 p-0"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           
-          {pageNumbers.map(page => (
-            <Button
-              key={page}
-              variant={currentPage === page ? "default" : "outline"}
-              size="lg" className="min-w-[36px]"
-              onClick={() => handlePageChange(page)}
-              disabled={isSearching}
-            >
-              {page}
-            </Button>
-          ))}
-          
+          {/* Pages avec animation */}
+          <div className="flex items-center gap-1">
+            {pageNumbers.map(page => (
+              <motion.button
+                key={page}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ 
+                  scale: currentPage === page ? 1.1 : 1,
+                  opacity: 1 
+                }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 20
+                }}
+                onClick={() => handlePageChange(page)}
+                disabled={isSearching}
+                className={`
+                  min-w-[32px] h-8 px-2 rounded-md text-sm font-medium
+                  transition-all duration-200
+                  ${currentPage === page 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'bg-background hover:bg-secondary border'
+                  }
+                  ${isSearching ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                {page}
+              </motion.button>
+            ))}
+          </div>
+
           <Button
-            variant="outline" size="lg"
-            onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || isSearching}
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || isSearching}
+            className="h-8 w-8 p-0"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+
+          {/* Input pour aller directement à une page */}
+          <form onSubmit={handlePageInputSubmit} className="flex items-center gap-1 ml-2">
+            <span className="text-xs text-muted-foreground mr-1">Aller à</span>
+            <Input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value)}
+              placeholder="Page"
+              className="w-16 h-8 text-center text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              disabled={isSearching}
+            />
+            <Button 
+              type="submit" 
+              size="sm" 
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              disabled={isSearching || !pageInput}
+            >
+              Go
+            </Button>
+          </form>
         </div>
       </div>
     );
-  };
+};
 
   const renderLoader = () => (
     <div className="flex flex-col items-center justify-center py-20">
@@ -583,59 +645,90 @@ export default function AdminBooksPage() {
     return (
       <motion.div
         key="list"
-        initial={fadeSlide.initial}
-        animate={fadeSlide.animate}
-        exit={fadeSlide.exit}
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.08,
+              delayChildren: 0.1
+            }
+          }
+        }}
         className="space-y-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {books.map((book) => (
-            <Card key={book.id} className="flex flex-col h-full">
-              <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div className="flex-1">
-                  <CardTitle className="text-lg line-clamp-1">{book.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-1 mt-1">
-                    <User className="h-3.5 w-3.5" />
-                    {book.author}
-                  </CardDescription>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleOpenEdit(String(book.id))}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      <span>Modifier</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleDeleteClick(book)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Supprimer</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <BookOpen className="h-4 w-4" />
-                  <span>ISBN: {book.isbn}</span>
-                </div>
-                {book.categoryId && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                    <Tag className="h-4 w-4" />
-                    <span>Catégorie: {
-                      categories.find(c => Number(c.id) === book.categoryId)?.name || book.categoryId
-                    }</span>
+            <motion.div
+              key={book.id}
+              variants={{
+                hidden: { 
+                  opacity: 0, 
+                  y: 10,
+                  scale: 0.95
+                },
+                visible: { 
+                  opacity: 1, 
+                  y: 0,
+                  scale: 1,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25,
+                    mass: 0.5
+                  }
+                }
+              }}
+            >
+              <Card className="flex flex-col h-full">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg line-clamp-1">{book.title}</CardTitle>
+                    <CardDescription className="flex items-center gap-1 mt-1">
+                      <User className="h-3.5 w-3.5" />
+                      {book.author}
+                    </CardDescription>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleOpenEdit(String(book.id))}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Modifier</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteClick(book)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Supprimer</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <BookOpen className="h-4 w-4" />
+                    <span>ISBN: {book.isbn}</span>
+                  </div>
+                  {book.categoryId && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                      <Tag className="h-4 w-4" />
+                      <span>Catégorie: {
+                        categories.find(c => Number(c.id) === book.categoryId)?.name || book.categoryId
+                      }</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
         {renderPagination()}
