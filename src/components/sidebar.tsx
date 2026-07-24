@@ -413,7 +413,7 @@ export function Sidebar() {
               Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à nouveau à votre compte.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex flex-col sm:flex-row gap- border-t-0 bg-transparent">
             <Button
               size="lg"
               variant="outline"
@@ -426,9 +426,8 @@ export function Sidebar() {
               size="lg"
               variant="destructiveSoft"
               onClick={handleLogout}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto px-4"
             >
-              <LogOut />
               Déconnexion
             </Button>
           </DialogFooter>

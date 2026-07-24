@@ -100,6 +100,10 @@ export interface TopBook {
   title: string;
   author: string;
   borrowCount: number;
+  book: {
+    title: string;
+    author: string;
+  };
 }
 
 export interface PaginatedResponse<T> {

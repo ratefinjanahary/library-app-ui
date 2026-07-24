@@ -21,7 +21,12 @@ export default function AdminDashboard() {
           analyticsService.getTopBooks(),
         ]);
         setKpis(kpisData);
-        setTopBooks(topBooksData.slice(0, 5)); // Limit to top 5 for chart
+        const formattedTopBooks = topBooksData.map(item => ({
+          title: item.book?.title || 'Titre inconnu',
+          author: item.book?.author || 'Auteur inconnu',
+          borrowCount: item.borrowCount || 0,
+        }));
+        setTopBooks(formattedTopBooks);
       } catch (error) {
         console.error("Failed to fetch analytics", error);
       } finally {
@@ -113,16 +118,41 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topBooks} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                    <XAxis 
+                    <XAxis
                       dataKey="title" 
                       className="text-xs" 
-                      tickFormatter={(value) => value.substring(0, 15) + "..."}
+                      tickFormatter={(value) => value.length > 15 ? value.substring(0, 15) + "..." : value}
                     />
                     <YAxis allowDecimals={false} className="text-xs" />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--background)' }}
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload || !payload.length) return null;
+                        
+                        return (
+                          <div className="bg-background rounded-lg shadow-sm p-4 min-w-[130px]">
+                            <p className="text-sm font-medium text-foreground/70 mb-1.5">
+                              {label}
+                            </p>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-lg font-bold text-primary">
+                                {payload[0].value}
+                              </span>
+                              <span className="text-foreground/70">emprunts</span>
+                            </div>
+                          </div>
+                        );
+                      }}
+                      cursor={{ 
+                        fill: 'rgba(59, 130, 246, 0.08)',
+                        radius: 4
+                      }}
                     />
-                    <Bar dataKey="borrowCount" fill="var(--color-primary)" name="Emprunts" radius={[4, 4, 0, 0]} />
+                    <Bar 
+                      dataKey="borrowCount" 
+                      fill="var(--primary)" // Couleur bleue visible
+                      name="Emprunts" 
+                      radius={[4, 4, 0, 0]} 
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
